@@ -1,0 +1,7 @@
+encryptionsalt: v1:6TkwV86NVfA=:v1:P+9Cgr/IDZgClUdt:NShzCBgaOS0K3UKg2HnhscfikLsOlQ==
+config:
+  aws:profile: demo
+  aws:region: us-west-1
+  infrastructure:internetGateway: "my-internet-gateway"
+  infrastructure:vpcCidr: "10.0.0.0/16"
+  infrastructure:vpcName: "my-vpc-csye6225"
