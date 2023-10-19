@@ -124,8 +124,8 @@ listAvailabilityZones().then((azs) => {
                     cidrBlocks: [ip2],
                 },
                 {
-                    fromPort: 8080,
-                    toPort: 8080,
+                    fromPort: 3000,
+                    toPort: 3000,
                     protocol: "tcp",
                     cidrBlocks: [ip3],
                 },
