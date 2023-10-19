@@ -109,7 +109,7 @@ listAvailabilityZones().then((azs) => {
                     fromPort: 22,
                     toPort: 22,
                     protocol: "tcp",
-                    cidrBlocks: [myip],
+                    cidrBlocks: [ip1],
                 },
                 {
                     fromPort: 80,
