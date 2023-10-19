@@ -1,10 +1,15 @@
 encryptionsalt: v1:6TkwV86NVfA=:v1:P+9Cgr/IDZgClUdt:NShzCBgaOS0K3UKg2HnhscfikLsOlQ==
 config:
   aws:profile: demo
-  aws:region: us-west-1
-  infrastructure:amiId: "ami-01a7004efae0d0a6a"
+  aws:region: us-east-1
+  infrastructure:amiId: "ami-010b515369f281543"
   infrastructure:internetGateway: "my-internet-gateway"
   infrastructure:keyname: mywebserverkey
   infrastructure:ownerid: "784594104829"
   infrastructure:vpcCidr: "10.0.0.0/16"
   infrastructure:vpcName: "my-vpc-csye6225"
+  infrastructure:ip1: "0.0.0.0/0"
+  infrastructure:ip2: "0.0.0.0/0"
+  infrastructure:ip3: "0.0.0.0/0"
+  infrastructure:myip: "73.219.87.237/32"
+

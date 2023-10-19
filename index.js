@@ -12,6 +12,11 @@ let ec2Instance;
 let AMI_ID;
 let AMMMID= config.require('amiId');
 let ownerId= config.require('ownerid')
+let ip1=config.require('ip1')
+let ip2=config.require('ip2')
+let ip3=config.require('ip3')
+let myip=config.require('myip')
+
 
 const vpc = new aws.ec2.Vpc(vpcName, {
     cidrBlock: vpcCidr,
@@ -104,36 +109,35 @@ listAvailabilityZones().then((azs) => {
                     fromPort: 22,
                     toPort: 22,
                     protocol: "tcp",
-                    cidrBlocks: ["73.219.87.237/32"],
+                    cidrBlocks: [myip],
                 },
                 {
                     fromPort: 80,
                     toPort: 80,
                     protocol: "tcp",
-                    cidrBlocks: ["0.0.0.0/0"],
+                    cidrBlocks: [ip1],
                 },
                 {
                     fromPort: 443,
                     toPort: 443,
                     protocol: "tcp",
-                    cidrBlocks: ["0.0.0.0/0"],
+                    cidrBlocks: [ip2],
                 },
                 {
                     fromPort: 8080,
                     toPort: 8080,
                     protocol: "tcp",
-                    cidrBlocks: ["0.0.0.0/0"],
+                    cidrBlocks: [ip3],
                 },
             ],
         });
       
 
-        const amiOwnerId = ownerId;
         const awsConfig = new sdk.Config({ region: "us-east-1" }); 
         const ec2 = new sdk.EC2(awsConfig);
         
         const listAmis = async () => {
-          const params = { Owners: ['ownerId'] };
+          const params = { Owners: [ownerId] };
         
           ec2.describeImages(params, function(err, data) {
             if (err) console.log(err, err.stack);
