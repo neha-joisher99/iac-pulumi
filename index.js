@@ -15,7 +15,6 @@ let ownerId= config.require('ownerid')
 let ip1=config.require('ip1')
 let ip2=config.require('ip2')
 let ip3=config.require('ip3')
-let myip=config.require('myip')
 
 
 const vpc = new aws.ec2.Vpc(vpcName, {
@@ -23,6 +22,7 @@ const vpc = new aws.ec2.Vpc(vpcName, {
     enableDnsSupport: true,
     enableDnsHostnames: true,
     tags: { Name: 'my-vpc' },
+
 });
 
 const internetGateway = new aws.ec2.InternetGateway(internetgateway, {
@@ -130,6 +130,14 @@ listAvailabilityZones().then((azs) => {
                     cidrBlocks: [ip3],
                 },
             ],
+            egress: [
+                {
+                    fromPort: 0,
+                    toPort: 0,
+                    protocol: "all",
+                    cidrBlocks: ["0.0.0.0/0"], 
+                },
+            ]
         });
       
 
@@ -150,21 +158,101 @@ listAvailabilityZones().then((azs) => {
         };
         
         const amis = listAmis();
-        const instance = new aws.ec2.Instance("webAppInstance", {
+
+            const dbSecurityGroup = new aws.ec2.SecurityGroup("dbSecurityGroup", {
+                vpcId: vpc.id,
+                ingress: [
+                    {
+                        fromPort: 5432,
+                        toPort: 5432,
+                        protocol: "tcp",
+                        securityGroups: [appSecurityGroup.id], // Allow traffic from the application security group
+                    },
+                ],
+                egress: [
+                    {
+                        fromPort: 0,
+                        toPort: 0,
+                        protocol: "all",//all
+                        cidrBlocks: ["0.0.0.0/0"], // Restrict access to the instance from the internet
+                    },
+                ],
+            });
+            
+            // Create an RDS Parameter Group
+            const rdsParameterGroup = new aws.rds.ParameterGroup("postgres-mywebapp-sg", {
+                family: "postgres14", // Replace with your desired RDS engine and version
+                description: "Custom parameter group for PostgreSQL",
+                type: "Custom"
+            });
+
+            const dbSubnetGroup = new aws.rds.SubnetGroup("mydbsubnetgroup", {
+                subnetIds: privateSubnets.map(subnet => subnet.id), // Use the IDs of your private subnets
+                tags: { Name: "My DB Subnet Group" }, // Replace with an appropriate name
+            });
+
+            const rdsInstance = new aws.rds.Instance("myRDSInstance", {
+                allocatedStorage: 20, 
+                storageType: "gp2",
+                engine: "postgres", 
+                engineVersion: "14.6",
+                instanceClass: "db.t3.micro",
+                multiAz: false, 
+                identifier: "csye6225",
+                username: config.require('username'),
+                password: config.require('password'), 
+                dbSubnetGroupName: dbSubnetGroup.name,
+                publiclyAccessible: false,
+                //publiclyAccessible: true,
+                dbName: config.require('dbName'),
+                parameterGroupName: rdsParameterGroup.name, 
+                vpcSecurityGroupIds: [dbSecurityGroup.id],
+                skipFinalSnapshot: true, 
+            });
+const port=5432;
+            const userDataScript = pulumi
+            .all([rdsInstance.endpoint, rdsInstance.username, rdsInstance.password])
+            .apply(([hostname, username, password]) => `#!/bin/bash
+ENV_FILE="/opt/csye6225/webapp/.env"
+echo "ENV_FILE: $ENV_FILE"
+echo "HOST:$hostname"
+echo "USER:$username"
+echo "PASSWORD:$password"
+echo "PORT:$port"         
+# Check if the .env file exists
+if [ -e "$ENV_FILE" ]; then
+    echo "file exists"
+    sudo rm "$ENV_FILE"
+    echo "HOST=$HOST" | sudo tee -a "$ENV_FILE"
+    echo "USER=$USER" | sudo tee -a "$ENV_FILE"
+    echo "PASSWORD=$PASSWORD" | sudo tee -a "$ENV_FILE"
+    echo "PORT=$PORT" | sudo tee -a "$ENV_FILE"
+else
+    echo "file does not exist"
+    #File doesn't exist, so create a new one with the variables
+    echo "HOST=$HOST" | sudo tee -a "$ENV_FILE"
+    echo "USER=$USER" | sudo tee -a "$ENV_FILE"
+    echo "PASSWORD=$PASSWORD" | sudo tee -a "$ENV_FILE"
+    echo "PORT=$PORT" | sudo tee -a "$ENV_FILE"
+fi`);
+            const instance = new aws.ec2.Instance("webAppInstance", {
                 ami: AMMMID,
                 instanceType: "t2.micro",
                 vpcSecurityGroupIds: [appSecurityGroup.id],
                 subnetId: publicSubnets[0].id,
                 keyName: keyNames,
+                userData: userDataScript,
                 rootBlockDevice: {
                     volumeSize: 25,
                     volumeType: "gp2",
                     deleteOnTermination: true,
                 },
-                disableApiTermination: true,
+                //disableApiTermination: true, 
+                dependsOn: [rdsInstance], 
             });
+
+
         
-    
 
 ec2Instance = instance; 
 exports.vpcId = vpc.id;
