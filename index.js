@@ -9,6 +9,7 @@ const internetgateway = config.require('internetGateway');
 const keyNames = config.require('keyname');
 let ec2Instance;
 let AMI_ID;
+
 let AMMMID = config.require('amiId');
 let ownerId = config.require('ownerid');
 let ip1 = config.require('ip1');
@@ -20,6 +21,7 @@ const vpc = new aws.ec2.Vpc(vpcName, {
     enableDnsSupport: true,
     enableDnsHostnames: true,
     tags: { Name: 'my-vpc' },
+
 });
 
 const internetGateway = new aws.ec2.InternetGateway(internetgateway, {
@@ -229,3 +231,6 @@ createSubnets()
         // Handle any errors here
         console.error('Error:', err);
     });
+
+
+
