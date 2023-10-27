@@ -200,11 +200,10 @@ async function createRDSAndEC2() {
         subnetId: publicSubnets[0].id,
         keyName: keyNames,
         userData: pulumi.interpolate`#!/bin/bash
-        sudo rm -rf /opt/csye6225/webapp/.env
-        sudo sh -c "echo 'HOST=${rdsInstance.address}' >> /etc/environment"
-        sudo sh -c "echo 'USERNAME=${rdsInstance.username}' >> /etc/environment"
-        sudo sh -c "echo 'PASSWORD=${rdsInstance.password}' >> /etc/environment"
-        sudo sh -c "echo 'DATABASE=${rdsInstance.dbName}' >> /etc/environment"
+        sudo sh -c 'echo "HOST=${rdsInstance.address}" >> /opt/csye6225/webapp/.env'
+        sudo sh -c 'echo "USERNAME=${rdsInstance.username}" >> /opt/csye6225/webapp/.env'
+        sudo sh -c 'echo "PASSWORD=${rdsInstance.password}" >> /opt/csye6225/webapp/.env'
+        sudo sh -c 'echo "DATABASE=${rdsInstance.dbName}" >> /opt/csye6225/webapp/.env'
         sudo systemctl daemon-reload`,
         rootBlockDevice: {
             volumeSize: 25,
