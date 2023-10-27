@@ -2,7 +2,7 @@ encryptionsalt: v1:6TkwV86NVfA=:v1:P+9Cgr/IDZgClUdt:NShzCBgaOS0K3UKg2HnhscfikLsO
 config:
   aws:profile: demo
   aws:region: us-east-1
-  infrastructure:amiId: "ami-018d103a0ed1f87b1"
+  infrastructure:amiId: "ami-0b2487ca64842d2c0"
   infrastructure:internetGateway: "my-internet-gateway"
   infrastructure:keyname: mywebserverkey
   infrastructure:ownerid: "784594104829"
@@ -11,7 +11,6 @@ config:
   infrastructure:ip1: "0.0.0.0/0"
   infrastructure:ip2: "0.0.0.0/0"
   infrastructure:ip3: "0.0.0.0/0"
-  infrastructure:myip: "73.219.87.237/32"
   infrastructure:allocatedStorage: 20
   infrastructure:storageType: "gp2"
   infrastructure:engine: "postgres"

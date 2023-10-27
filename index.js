@@ -8,8 +8,6 @@ const vpcName = config.require('vpcName');
 const internetgateway = config.require('internetGateway');
 const keyNames = config.require('keyname');
 let ec2Instance;
-let AMI_ID;
-
 let AMMMID = config.require('amiId');
 let ownerId = config.require('ownerid');
 let ip1 = config.require('ip1');
@@ -21,7 +19,6 @@ const vpc = new aws.ec2.Vpc(vpcName, {
     enableDnsSupport: true,
     enableDnsHostnames: true,
     tags: { Name: 'my-vpc' },
-
 });
 
 const internetGateway = new aws.ec2.InternetGateway(internetgateway, {
@@ -200,11 +197,11 @@ async function createRDSAndEC2() {
         subnetId: publicSubnets[0].id,
         keyName: keyNames,
         userData: pulumi.interpolate`#!/bin/bash
-        sudo sh -c 'echo "HOST=${rdsInstance.address}" >> /opt/csye6225/webapp/.env'
-        sudo sh -c 'echo "USERNAME=${rdsInstance.username}" >> /opt/csye6225/webapp/.env'
-        sudo sh -c 'echo "PASSWORD=${rdsInstance.password}" >> /opt/csye6225/webapp/.env'
-        sudo sh -c 'echo "DATABASE=${rdsInstance.dbName}" >> /opt/csye6225/webapp/.env'
-        sudo systemctl daemon-reload`,
+sudo sh -c 'echo "HOST=${rdsInstance.address}" >> /opt/csye6225/webapp/.env'
+sudo sh -c 'echo "USERNAME=${rdsInstance.username}" >> /opt/csye6225/webapp/.env'
+sudo sh -c 'echo "PASSWORD=${rdsInstance.password}" >> /opt/csye6225/webapp/.env'
+sudo sh -c 'echo "DATABASE=${rdsInstance.dbName}" >> /opt/csye6225/webapp/.env'
+sudo systemctl daemon-reload`,
         rootBlockDevice: {
             volumeSize: 25,
             volumeType: "gp2",
@@ -230,6 +227,3 @@ createSubnets()
         // Handle any errors here
         console.error('Error:', err);
     });
-
-
-
