@@ -2,7 +2,7 @@ encryptionsalt: v1:6TkwV86NVfA=:v1:P+9Cgr/IDZgClUdt:NShzCBgaOS0K3UKg2HnhscfikLsO
 config:
   aws:profile: demo
   aws:region: us-east-1
-  infrastructure:amiId: "ami-0b2487ca64842d2c0"
+  infrastructure:amiId: "ami-0cef937f1e18e42e3"
   infrastructure:internetGateway: "my-internet-gateway"
   infrastructure:keyname: mywebserverkey
   infrastructure:ownerid: "784594104829"
@@ -24,6 +24,7 @@ config:
   infrastructure:volumeType: "gp2"
   infrastructure:volumeSize: 25;
   infrastructure:familyRDS: "postgres15"
+  infrastructure:domainName: "demo.nehadevhub.me"
   
   
 
