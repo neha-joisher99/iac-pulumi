@@ -13,6 +13,7 @@ let ownerId = config.require('ownerid');
 let ip1 = config.require('ip1');
 let ip2 = config.require('ip2');
 let ip3 = config.require('ip3');
+let domainName = config.require('domainName')
 
 const vpc = new aws.ec2.Vpc(vpcName, {
     cidrBlock: vpcCidr,
@@ -130,7 +131,14 @@ async function createSecurityGroups() {
                 toPort: 0,
                 protocol: "all",
                 cidrBlocks: ["0.0.0.0/0"],
-            },
+            },{
+                fromPort: 8125,
+                toPort: 8125,
+                protocol: "udp",
+                cidrBlocks: ["0.0.0.0/0"],
+            }
+        
+            
         ],
     });
 
@@ -157,9 +165,53 @@ async function createSecurityGroups() {
         ],
     });
 }
+let cloudWatchRoleResult;
+let cloudWatchAgentProfile;
 
+async function cloudWatchRole() {
+    if (!cloudWatchRoleResult) {
+        // Create a new IAM role for the CloudWatch agent
+        cloudWatchRoleResult = new aws.iam.Role("CloudWatchAgentRole", {
+            assumeRolePolicy: JSON.stringify({
+                Version: "2012-10-17",
+                Statement: [{
+                    Effect: "Allow",
+                    Principal: {
+                        Service: "ec2.amazonaws.com",
+                    },
+                    Action: "sts:AssumeRole",
+                }],
+            }),
+        });
+
+        // Attach the predefined AWS managed CloudWatchAgentServerPolicy to the role
+        const policyArn = aws.iam.ManagedPolicy.CloudWatchAgentServerPolicy;
+        console.log(policyArn)
+
+        new aws.iam.RolePolicyAttachment("CloudWatchAgentPolicyAttachment", {
+            policyArn: policyArn,
+            role: cloudWatchRoleResult,
+        });
+
+        // Only create the InstanceProfile if it doesn't exist yet
+        if (!cloudWatchAgentProfile) {
+            cloudWatchAgentProfile = new aws.iam.InstanceProfile("CloudWatchAgentProfile", {
+                role: cloudWatchRoleResult.name,
+            });
+        }
+    }
+    return cloudWatchAgentProfile;
+}
+cloudWatchRole().catch(console.error);
+
+
+
+
+
+let instance;
 async function createRDSAndEC2() {
     // Create an RDS Parameter Group
+    const cloudWatchAgentRole = await cloudWatchRole();
      rdsParameterGroup = new aws.rds.ParameterGroup("postgres-mywebapp-sg", {
         family: "postgres15",
         description: "Custom parameter group for PostgreSQL",
@@ -189,25 +241,58 @@ async function createRDSAndEC2() {
         skipFinalSnapshot: true,
     });
 
+    cloudWatchAgentProfile = await cloudWatchRole();
     const port = 5432;
-    const instance = new aws.ec2.Instance("webAppInstance", {
+    instance = new aws.ec2.Instance("webAppInstance", {
         ami: AMMMID,
         instanceType: "t2.micro",
         vpcSecurityGroupIds: [appSecurityGroup.id],
         subnetId: publicSubnets[0].id,
         keyName: keyNames,
         userData: pulumi.interpolate`#!/bin/bash
+sudo sh -c 'rm -f /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "HOST=${rdsInstance.address}" >> /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "USERNAME=${rdsInstance.username}" >> /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "PASSWORD=${rdsInstance.password}" >> /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "DATABASE=${rdsInstance.dbName}" >> /opt/csye6225/webapp/.env'
-sudo systemctl daemon-reload`,
+sudo sh -c 'echo "dialect="postgres" >> /opt/csye6225/webapp/.env'
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+    -a fetch-config \
+    -m ec2 \
+    -c file:/opt/aws/config.json \
+    -s
+sudo systemctl daemon-reload
+sudo systemctl enable webapp
+sudo systemctl start webapp
+sudo systemctl enable amazon-cloudwatch-agent
+sudo systemctl start amazon-cloudwatch-agent`,
         rootBlockDevice: {
             volumeSize: 25,
             volumeType: "gp2",
         },
         dependsOn: [rdsInstance],
+        iamInstanceProfile: cloudWatchAgentProfile.name,
     });
+
+}
+
+
+
+async function createRoute53(){
+ 
+    const ec2InstancePublicIp = instance.publicIp;
+    const zone = aws.route53.getZone({ name: domainName });
+
+    zone.then(zone => {
+        const record = new aws.route53.Record("routeforEC2", {
+            zoneId: zone.zoneId,
+            name: domainName, 
+            type: "A",
+            ttl: 60, 
+            records: [ec2InstancePublicIp], 
+        });
+    });
+
 
     ec2Instance = instance;
     exports.vpcId = vpc.id;
@@ -218,12 +303,13 @@ sudo systemctl daemon-reload`,
 
 async function deployResources() {
     await createSecurityGroups();
+    await cloudWatchRole()
     await createRDSAndEC2();
+    await createRoute53();
 }
 
 createSubnets()
     .then(() => deployResources())
     .catch((err) => {
-        // Handle any errors here
         console.error('Error:', err);
     });
