@@ -36,3 +36,6 @@ config:
   infrastructure:displayName: "My Storage Service Account"
   infrastructure:mysecret: "gcp-storage-service-msdsdsadsadsaddayssnwknwdnwdnstoragestorage-account-key"
   infrastructure:project_id: "csye6225-demo-405718"
+  infrastructure:API_KEY: "690e911cb348c79a50e880586c2c086b-5d2b1caa-e653bd24"
+  infrastructure:DOMAIN: "nehadevhub.me"
+

@@ -584,6 +584,8 @@ let listener = new aws.lb.Listener("listener", {
     uniformBucketLevelAccess: true,
 });
 const PROJECT_ID= config.require('project_id')
+const Domain=config.require('DOMAIN')
+const api_key=config.require('API_KEY')  
 console.log(PROJECT_ID)
    const lambdaFunction = new aws.lambda.Function("myLambdaFunction", {
       runtime: "nodejs18.x",
@@ -597,8 +599,8 @@ console.log(PROJECT_ID)
         GCP_SECRET_NAME: mysecret.name,
         GCP_BUCKET_NAME: bucket.name,
         DYNAMO_DB_TABLE: trackEmailsDynamoDB.name,
-        DOMAIN: process.env.DOMAIN,
-        API_KEY: process.env.API_KEY,
+        DOMAIN: Domain,
+        API_KEY: api_key,
         PROJECT_ID:PROJECT_ID
             }
         },
