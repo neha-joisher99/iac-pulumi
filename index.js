@@ -2,6 +2,12 @@ const pulumi = require('@pulumi/pulumi');
 const aws = require('@pulumi/aws');
 const sdk = require("aws-sdk");
 const fs= require('fs')
+const gcp = require("@pulumi/gcp");
+const { Topic } = require('@pulumi/aws/sns');
+const { accessKey } = require('@pulumi/aws/config');
+const dotenv =require('dotenv');
+
+dotenv.config();
 
 const config = new pulumi.Config();
 const healthCheckPath=config.require('healthCheckPath')
@@ -16,6 +22,18 @@ let AMMMID = config.require('amiId');
 let ip1 = config.require('ip1');
 let domainName = config.require('domainName')
 const serverPort=config.require('serverPort')
+
+console.log(process.env.API_KEY)
+console.log(process.env.DOMAIN)
+
+
+let snsTopic
+let loadBalancer 
+let instance;
+let rdsInstance;
+let mysecret;
+
+snsTopic = new aws.sns.Topic("assignment_submission", {});
 
 const vpc = new aws.ec2.Vpc(vpcName, {
     cidrBlock: vpcCidr,
@@ -212,13 +230,30 @@ async function cloudWatchRole() {
             }),
         });
 
+
       
         const policyArn = aws.iam.ManagedPolicy.CloudWatchAgentServerPolicy;
-        console.log(policyArn)
 
         new aws.iam.RolePolicyAttachment("CloudWatchAgentPolicyAttachment", {
             policyArn: policyArn,
             role: cloudWatchRoleResult,
+        });
+
+        const snsPublishPolicy = snsTopic.arn.apply(arn => new aws.iam.Policy("snsPublishPolicy", {
+            description: "Policy for allowing publishing to SNS topic",
+            policy: JSON.stringify({
+                Version: "2012-10-17",
+                Statement: [{
+                    Action: "sns:Publish",
+                    Effect: "Allow",
+                    Resource: arn,
+                }],
+            }),
+        }));
+        
+        new aws.iam.RolePolicyAttachment("snsPolicyAttachment", {
+            role: cloudWatchRoleResult.name,
+            policyArn: snsPublishPolicy.arn,
         });
 
         
@@ -233,14 +268,10 @@ async function cloudWatchRole() {
 cloudWatchRole().catch(console.error);
 
 
-
-
-let loadBalancer 
-let instance;
-let  rdsInstance;
 async function createRDSAndEC2() {
 
     const cloudWatchAgentRole = await cloudWatchRole();
+
      rdsParameterGroup = new aws.rds.ParameterGroup("postgres-mywebapp-sg", {
         family: "postgres15",
         description: "Custom parameter group for PostgreSQL",
@@ -275,8 +306,8 @@ async function createRoute53() {
    cloudWatchAgentProfile = await cloudWatchRole();
 
 
-const launchTemplateData = pulumi.all([rdsInstance.address, rdsInstance.username, rdsInstance.password, rdsInstance.dbName])
-    .apply(([address, username, password, dbName]) => {
+const launchTemplateData = pulumi.all([rdsInstance.address, rdsInstance.username, rdsInstance.password, rdsInstance.dbName, snsTopic.arn])
+    .apply(([address, username, password, dbName,topicArn]) => {
         const userDataScript = `#!/bin/bash
 sudo sh -c 'rm -f /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "HOST=${address}" >> /opt/csye6225/webapp/.env'
@@ -284,6 +315,7 @@ sudo sh -c 'echo "USERNAME=${username}" >> /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "PASSWORD=${password}" >> /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "DATABASE=${dbName}" >> /opt/csye6225/webapp/.env'
 sudo sh -c 'echo "dialect=postgres" >> /opt/csye6225/webapp/.env'
+sudo sh -c 'echo "TopicArn=${topicArn}" >> /opt/csye6225/webapp/.env'
 sudo systemctl daemon-reload
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
     -a fetch-config \
@@ -358,7 +390,7 @@ sudo systemctl daemon-reload`;
 });
 
 const attachment = new aws.autoscaling.Attachment("asg-attachment", {
-    albTargetGroupArn: targetGroup.arn,
+    lbTargetGroupArn: targetGroup.arn,
     autoscalingGroupName: asg.name,
 });
 
@@ -436,19 +468,191 @@ let listener = new aws.lb.Listener("listener", {
     });
 
 
+
+//     const trackEmailsDynamoDB = new aws.dynamodb.Table("trackEmails", {
+//         attributes: [
+//             { name: "id", type: "S" },          
+//         ],
+//         hashKey: "id",
+//         billingMode: "PAY_PER_REQUEST", 
+//    });
+
+    const trackEmailsDynamoDB = new aws.dynamodb.Table("trackEmails", {
+        attributes: [
+            { name: "assignmentId", type: "S" },
+            { name: "submissionId", type: "S" },
+            { name: "userId", type: "S" },
+        ],
+        hashKey: "assignmentId",
+        rangeKey: "submissionId",
+        billingMode: "PAY_PER_REQUEST",
+        globalSecondaryIndexes: [{
+            name: "UserIdIndex",
+            hashKey: "userId",
+            projectionType: "ALL",
+        }],
+    });
+   
+
+    const lambdaRole = new aws.iam.Role("lambdaRole", {
+       assumeRolePolicy: JSON.stringify({
+           Version: "2012-10-17",
+           Statement: [{
+               Action: "sts:AssumeRole",
+               Effect: "Allow",
+               Principal: {
+                   Service: "lambda.amazonaws.com",
+               },
+           }],
+       }),
+   });
+
+   new aws.iam.RolePolicyAttachment("lambda-basic-execution-role", {
+    role: lambdaRole.name,
+    policyArn: config.require('policyArn'),
+});
+
+
+   const ec2PolicyForLambda = new aws.iam.RolePolicy("ec2PolicyForLambda", {
+       role: lambdaRole.name,
+       policy: JSON.stringify({
+           Version: "2012-10-17",
+           Statement: [
+               {
+                   Effect: "Allow",
+                   Action: [
+                       "ec2:CreateNetworkInterface",
+                       "ec2:DescribeNetworkInterfaces",
+                       "ec2:DeleteNetworkInterface",
+                   ],
+                   Resource: config.require('Resource'),
+               },
+           ],
+       }),
+   });
+
+   const secretsManagerPolicy = new aws.iam.RolePolicy("secretsManagerPolicy", {
+    role: lambdaRole.name,
+    policy: pulumi.output({
+        Version: "2012-10-17",
+        Statement: [{
+            Effect: "Allow",
+            Action: "secretsmanager:GetSecretValue",
+            Resource: mysecret.arn
+        }]
+    }).apply(policy => JSON.stringify(policy))
+});
+
+
+   const dynamoDbPolicy = pulumi.interpolate`{
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Effect": "Allow",
+               "Action": [
+                   "dynamodb:GetItem",
+                   "dynamodb:PutItem",
+                   "dynamodb:UpdateItem"
+               ],
+               "Resource": "${trackEmailsDynamoDB.arn}"
+           }
+       ]
+   }`;
+   
+   // Attach the policy to the Lambda role
+   const dynamoDbAccessPolicy = new aws.iam.RolePolicy("dynamoDbAccess", {
+       role: lambdaRole.name,
+       policy: dynamoDbPolicy,
+   });
+
+
+   const lambdaSecurityGroup = new aws.ec2.SecurityGroup("lambdaSecurityGroup", {
+       vpcId: vpc.id,
+       description: "Allow outbound HTTP/S",
+       egress: [{
+           fromPort: 0,
+           toPort: 0,
+           protocol: "-1", // -1 means all protocols
+           cidrBlocks: ["0.0.0.0/0"],
+       }],
+   });
+
+    const bucketName= config.require('bucketName')
+    const bucket = new gcp.storage.Bucket(bucketName, {
+    location: "US",
+    forceDestroy: true,
+    uniformBucketLevelAccess: true,
+});
+const PROJECT_ID= config.require('project_id')
+console.log(PROJECT_ID)
+   const lambdaFunction = new aws.lambda.Function("myLambdaFunction", {
+      runtime: "nodejs18.x",
+       code: new pulumi.asset.AssetArchive({
+           ".": new pulumi.asset.FileArchive("./Archive.zip"),
+       }),
+       handler: "index.handler",
+       role: lambdaRole.arn,
+        environment: {
+            variables: {
+        GCP_SECRET_NAME: mysecret.name,
+        GCP_BUCKET_NAME: bucket.name,
+        DYNAMO_DB_TABLE: trackEmailsDynamoDB.name,
+        DOMAIN: process.env.DOMAIN,
+        API_KEY: process.env.API_KEY,
+        PROJECT_ID:PROJECT_ID
+            }
+        },
+
+   });
+
+   const lambdaPermission = new aws.lambda.Permission("lambdaPermission", {
+       action: "lambda:InvokeFunction",
+       function: lambdaFunction.name,
+       principal: "sns.amazonaws.com",
+       sourceArn: snsTopic.arn,
+   });
+
+   const snsSubscription = new aws.sns.TopicSubscription("snsSubscription", {
+       topic: snsTopic.arn,
+       protocol: "lambda",
+       endpoint: lambdaFunction.arn,
+   });    
+
     ec2Instance = instance;
     exports.vpcId = vpc.id;
     exports.publicSubnetIds = publicSubnets.map(subnet => subnet.id);
     exports.privateSubnetIds = privateSubnets.map(subnet => subnet.id);
 }
 
+async function createGCPServiceAccountAndStoreInAWSSecrets() {
+
+    const storageServiceAccount = new gcp.serviceaccount.Account("storageServiceAccount", {
+        accountId: config.require('accountId'),
+        displayName: config.require('accountId'),
+    });
+    const iamPolicyBinding = new gcp.projects.IAMBinding("iamPolicyBinding", {
+        project: gcp.config.project,
+        role: "roles/storage.admin",
+        members: [pulumi.interpolate`serviceAccount:${storageServiceAccount.email}`],
+    });
+    const myServiceAccountKey = new gcp.serviceaccount.Key("myServiceAccountKey", {
+        serviceAccountId: storageServiceAccount.accountId,
+    });
+     mysecret = new aws.secretsmanager.Secret("mysecret", {
+        name: config.require('mysecret'),
+    });
+    new aws.secretsmanager.SecretVersion("my-secret-version", {
+        secretBinary: myServiceAccountKey.privateKey,
+        secretId: mysecret.id,
+    });
+}
+
 function deployResources() {
     createSecurityGroups()
         .then(() => cloudWatchRole())
         .then(() => createRDSAndEC2())
-        .then(rdsId => {
-            return createRoute53();
-        })
+        .then(()=>createGCPServiceAccountAndStoreInAWSSecrets())
+        .then(() =>createRoute53())
         .catch(err => {
             console.error('Error during resource deployment:', err);
         });

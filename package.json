@@ -2,8 +2,16 @@
     "name": "infrastructure",
     "main": "index.js",
     "dependencies": {
-        "@pulumi/pulumi": "^3.0.0",
+        "@aws-cdk/aws-iam": "^1.19.0",
+        "@aws-cdk/core": "^1.19.0",
+        "@aws-sdk/client-secrets-manager": "^3.454.0",
+        "@google-cloud/storage": "^7.6.0",
         "@pulumi/aws": "^5.0.0",
-        "@pulumi/awsx": "^1.0.0"
+        "@pulumi/awsx": "^1.0.0",
+        "@pulumi/gcp": "^7.2.1",
+        "@pulumi/google-native": "^0.31.1",
+        "@pulumi/pulumi": "^3.94.2",
+        "dotenv": "^16.3.1",
+        "path": "^0.12.7"
     }
 }

@@ -1,29 +1,38 @@
-encryptionsalt: v1:6TkwV86NVfA=:v1:P+9Cgr/IDZgClUdt:NShzCBgaOS0K3UKg2HnhscfikLsOlQ==
+encryptionsalt: v1:r3pAsLEcoEg=:v1:o/3e0QHPJckPwuO/:lH1jpK7ARmGhH9aa9+yY+sTb4uwMkw==
 config:
   aws:profile: demo
-  aws:region: us-east-1
-  infrastructure:amiId: "ami-0b42571b412195ccb"
+  aws:region: "us-east-1"
+  gcp:project: "csye6225-demo-405718"
+  gcp:region: "us-east1"
+  infrastructure:allocatedStorage: "20"
+  infrastructure:amiId: "ami-0993c6e156b27b605"
+  infrastructure:dbName: "csye6225"
+  infrastructure:domainName: "demo.nehadevhub.me"
+  infrastructure:engine: "postgres"
+  infrastructure:familyRDS: "postgres15"
+  infrastructure:healthCheckPath: "/healthz"
+  infrastructure:identifier: "csye6225"
+  infrastructure:instanceClass: "db.t3.micro"
+  infrastructure:instanceTypeEC2: "t2.micro"
   infrastructure:internetGateway: "my-internet-gateway"
-  infrastructure:keyname: mywebserverkey
-  infrastructure:ownerid: "784594104829"
-  infrastructure:vpcCidr: "10.0.0.0/16"
-  infrastructure:vpcName: "my-vpc-csye6225"
   infrastructure:ip1: "0.0.0.0/0"
   infrastructure:ip2: "0.0.0.0/0"
   infrastructure:ip3: "0.0.0.0/0"
-  infrastructure:allocatedStorage: 20
-  infrastructure:storageType: "gp2"
-  infrastructure:engine: "postgres"
-  infrastructure:instanceClass: "db.t3.micro"
-  infrastructure:multiAz: false
-  infrastructure:identifier: "csye6225"
-  infrastructure:username: "csye6225"
+  infrastructure:keyname: mywebserverkey
+  infrastructure:multiAz: "false"
+  infrastructure:ownerid: "784594104829"
   infrastructure:password: "nehajoisher"
-  infrastructure:dbName: "csye6225"
-  infrastructure:instanceTypeEC2: "t2.micro"
+  infrastructure:serverPort: "3000"
+  infrastructure:storageType: "gp2"
+  infrastructure:username: "csye6225"
+  infrastructure:volumeSize: "25"
   infrastructure:volumeType: "gp2"
-  infrastructure:volumeSize: 25
-  infrastructure:familyRDS: "postgres15"
-  infrastructure:domainName: "demo.nehadevhub.me"
-  infrastructure:healthCheckPath: "/healthz"
-  infrastructure:serverPort: 3000
+  infrastructure:vpcCidr: "10.0.0.0/16"
+  infrastructure:vpcName: "my-vpc-csye6225"
+  infrastructure:policyArn: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  infrastructure:Resource: "*"
+  infrastructure:bucketName: "csye62255cloudcanvasmybucketstoragestorage"
+  infrastructure:accountId: "my-gcp-storage-account"
+  infrastructure:displayName: "My Storage Service Account"
+  infrastructure:mysecret: "gcp-storage-service-msdsdsadsadsaddayssnwknwdnwdnstoragestorage-account-key"
+  infrastructure:project_id: "csye6225-demo-405718"
