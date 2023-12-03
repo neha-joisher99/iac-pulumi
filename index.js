@@ -22,6 +22,7 @@ let AMMMID = config.require('amiId');
 let ip1 = config.require('ip1');
 let domainName = config.require('domainName')
 const serverPort=config.require('serverPort')
+const sslCertificateArn=config.require('sslCertificateArn')
 
 console.log(process.env.API_KEY)
 console.log(process.env.DOMAIN)
@@ -122,12 +123,12 @@ async function createSecurityGroups() {
     loadbalancer_sg = new aws.ec2.SecurityGroup("loadbalancer_sg", {
         vpcId: vpc.id,
         ingress: [
-            {
-                fromPort: 80,
-                toPort: 80,
-                protocol: "tcp",
-                cidrBlocks: [ip1],
-            },
+            // {
+            //     fromPort: 80,
+            //     toPort: 80,
+            //     protocol: "tcp",
+            //     cidrBlocks: [ip1],
+            // },
             {
                 fromPort: 443,
                 toPort: 443,
@@ -148,12 +149,12 @@ async function createSecurityGroups() {
      appSecurityGroup = new aws.ec2.SecurityGroup("applicationSecurityGroup", {
         vpcId: vpc.id,
         ingress: [
-            {
-                fromPort: 22,
-                toPort: 22,
-                protocol: "tcp",
-                cidrBlocks: [ip1],
-            },
+            // {
+            //     fromPort: 22,
+            //     toPort: 22,
+            //     protocol: "tcp",
+            //     cidrBlocks: [ip1],
+            // },
             {
                 fromPort: serverPort,
                 toPort: serverPort,
@@ -447,7 +448,9 @@ const cpuUtilizationAlarm_down = new aws.cloudwatch.MetricAlarm("cpuUtilizationA
 
 let listener = new aws.lb.Listener("listener", {
     loadBalancerArn: loadBalancer.arn,
-    port: 80,
+    port: 443,
+    protocol: "HTTPS",
+    certificateArn: sslCertificateArn, 
     defaultActions: [{
         type: "forward",
         targetGroupArn: targetGroup.arn,
@@ -642,6 +645,8 @@ async function createGCPServiceAccountAndStoreInAWSSecrets() {
     });
      mysecret = new aws.secretsmanager.Secret("mysecret", {
         name: config.require('mysecret'),
+        forceOverwriteReplicaSecret:true
+
     });
     new aws.secretsmanager.SecretVersion("my-secret-version", {
         secretBinary: myServiceAccountKey.privateKey,
