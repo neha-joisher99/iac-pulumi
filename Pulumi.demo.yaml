@@ -34,7 +34,7 @@ config:
   infrastructure:bucketName: "csye62255cloudcanvasmybucketstoragestorage"
   infrastructure:accountId: "my-gcp-storage-account"
   infrastructure:displayName: "My Storage Service Account"
-  infrastructure:mysecret: "gcp-storage-service-msdsdfdbbnbnsfdsadsvhjvhjvadssfsdfsdfaddayssnbjbbjbwknwdnwdnstoragestorage-account-key"
+  infrastructure:mysecret: "gcp-storage-service-msdsdfdbbnbnsfdsadsvhdfsfsffjvhjvadssfsdfsdfaddayssnbjbbjbwknwdnwdnstoragestorage-account-key"
   infrastructure:project_id: "csye6225-demo-405718"
   infrastructure:API_KEY: "690e911cb348c79a50e880586c2c086b-5d2b1caa-e653bd24"
   infrastructure:DOMAIN: "nehadevhub.me"
