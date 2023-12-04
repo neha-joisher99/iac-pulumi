@@ -593,7 +593,7 @@ console.log(PROJECT_ID)
    const lambdaFunction = new aws.lambda.Function("myLambdaFunction", {
       runtime: "nodejs18.x",
        code: new pulumi.asset.AssetArchive({
-           ".": new pulumi.asset.FileArchive("./Archive2.zip"),
+           ".": new pulumi.asset.FileArchive("./Archive.zip"),
        }),
        handler: "index.handler",
        role: lambdaRole.arn,
