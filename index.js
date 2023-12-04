@@ -149,12 +149,12 @@ async function createSecurityGroups() {
      appSecurityGroup = new aws.ec2.SecurityGroup("applicationSecurityGroup", {
         vpcId: vpc.id,
         ingress: [
-            // {
-            //     fromPort: 22,
-            //     toPort: 22,
-            //     protocol: "tcp",
-            //     cidrBlocks: [ip1],
-            // },
+            {
+                fromPort: 22,
+                toPort: 22,
+                protocol: "tcp",
+                cidrBlocks: [ip1],
+            },
             {
                 fromPort: serverPort,
                 toPort: serverPort,
