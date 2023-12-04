@@ -78,9 +78,10 @@ aws acm import-certificate \
     --private-key fileb://<your-private-key-file>.key \
     --certificate-chain fileb://<your-certificate-chain-file>.crt \
     --region <your-region>
-Replace <your-certificate-file>, <your-private-key-file>, and <your-certificate-chain-file> with your actual file names. Set <your-region> to the AWS region you are using.
 
-Note Certificate ARN: The command will output a Certificate ARN. Note this ARN as you'll need it to configure your load balancer.
+
+Replace your-certificate-file, your-private-key-file, and your-certificate-chain-file with your actual file names. Set your-region to the AWS region you are using.
+
 
 Cleanup
 To delete the resources, run pulumi destroy. This command will remove all resources managed by Pulumi in this project.
