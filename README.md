@@ -74,10 +74,9 @@ Run AWS CLI Command:
 Use the following command to import the certificate into AWS Certificate Manager:
 
 aws acm import-certificate \
-    --certificate fileb://<your-certificate-file>.crt \
-    --private-key fileb://<your-private-key-file>.key \
-    --certificate-chain fileb://<your-certificate-chain-file>.crt \
-    --region <your-region>
+    --certificate fileb://your-certificate-file.crt \
+    --private-key fileb://your-private-key-file.key \
+    --certificate-chain fileb://your-certificate-chain-file.crt \
 
 
 Replace your-certificate-file, your-private-key-file, and your-certificate-chain-file with your actual file names. Set your-region to the AWS region you are using.
