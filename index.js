@@ -149,12 +149,12 @@ async function createSecurityGroups() {
      appSecurityGroup = new aws.ec2.SecurityGroup("applicationSecurityGroup", {
         vpcId: vpc.id,
         ingress: [
-            // {
-            //     fromPort: 22,
-            //     toPort: 22,
-            //     protocol: "tcp",
-            //     cidrBlocks: [ip1],
-            // },
+            {
+                fromPort: 22,
+                toPort: 22,
+                protocol: "tcp",
+                cidrBlocks: [ip1],
+            },
             {
                 fromPort: serverPort,
                 toPort: serverPort,
@@ -593,7 +593,7 @@ console.log(PROJECT_ID)
    const lambdaFunction = new aws.lambda.Function("myLambdaFunction", {
       runtime: "nodejs18.x",
        code: new pulumi.asset.AssetArchive({
-           ".": new pulumi.asset.FileArchive("./Archive.zip"),
+           ".": new pulumi.asset.FileArchive("./Archive2.zip"),
        }),
        handler: "index.handler",
        role: lambdaRole.arn,
